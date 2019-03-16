@@ -1,7 +1,7 @@
 # BinaryDependencyPropagator
 
 
-What it is:
+What is it:
 This tool is meant to copy dll files between projects to facilitate debugging of .net applications.
 It is useful when a project is composed of separate solutions requiring manual copying of binaries between the directories.
 For example, many projects publish their binaries into a private NuGet repository and at a later stage of the build process
