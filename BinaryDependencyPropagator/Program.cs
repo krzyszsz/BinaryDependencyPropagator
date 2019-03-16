@@ -72,7 +72,7 @@ namespace BinaryDependencyPropagator
 
             var allFilesGroupedByName = files.ToLookup(x => Path.GetFileName(x.FullName));
 
-            var subsetNotFromNuget = files.Where(x => x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
+            var subsetNotFromNuget = files.Where(x => !x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
             var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(x.FullName.Substring(x.FullName.Length - 4) + Program.DebugSymbolsExtension)).ToList();
             var srcCollection = subsetWithPdb.GroupBy(x => Path.GetFileName(x.FullName)).Select(x => new {itself = x, newest = x.Max(y => y.Date)}).Select(x => x.itself.First(y => y.Date == x.newest)).ToList();
             int processedFiles = 0;
