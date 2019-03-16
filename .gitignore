@@ -2,11 +2,9 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/BinaryDependencyPropagator/v15/Server/sqlite3
-/.vs/BinaryDependencyPropagator/v15/.suo
 /.vs
-/BinaryDependencyPropagator/bin/Debug
+/BinaryDependencyPropagator/bin
 /BinaryDependencyPropagator/obj
-/BinaryDependencyPropagator.Tests/bin/Debug
+/BinaryDependencyPropagator.Tests/bin
 /BinaryDependencyPropagator.Tests/obj
-/packages/NUnit.3.11.0
+/packages
