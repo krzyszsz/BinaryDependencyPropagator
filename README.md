@@ -1,5 +1,7 @@
 # BinaryDependencyPropagator
 
+[![Build Status](https://dev.azure.com/krzysztofjaniszewski0334/BinaryDependencyPropagator/_apis/build/status/krzyszsz.BinaryDependencyPropagator?branchName=master)](https://dev.azure.com/krzysztofjaniszewski0334/BinaryDependencyPropagator/_build/latest?definitionId=1&branchName=master)
+
 
 What is it:
 This tool is meant to copy dll files between projects to facilitate debugging of .net applications.
