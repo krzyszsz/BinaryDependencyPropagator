@@ -114,12 +114,20 @@ namespace BinaryDependencyPropagator
                         Console.Write(".");
                     }
 
-                    Retry(() => File.Delete(destFile.FullName), loggingMessage: string.Format("delete:{0}", destFile.FullName));
+                    Retry(() =>
+                    {
+                        if (File.Exists(destFile.FullName))
+                            File.Delete(destFile.FullName);
+                    }, loggingMessage: string.Format("delete:{0}", destFile.FullName));
                     Retry(() => File.Copy(srcFile.FullName, destFile.FullName), loggingMessage: string.Format("copy:{0}=>{1}", srcFile.FullName, destFile.FullName));
 
                     var pdbSrc = ToPdb(srcFile.FullName);
                     var pdbDestination = ToPdb(destFile.FullName);
-                    Retry(() => File.Delete(pdbDestination), loggingMessage: string.Format("delete:{0}", pdbDestination));
+                    Retry(() =>
+                    {
+                        if (File.Exists(pdbDestination))
+                            File.Delete(pdbDestination);
+                    }, loggingMessage: string.Format("delete:{0}", pdbDestination));
                     Retry(() => File.Copy(pdbSrc, pdbDestination), loggingMessage: string.Format("copy:{0}=>{1}", pdbSrc, pdbDestination));
 
                     Interlocked.Increment(ref processedFiles);
@@ -150,10 +158,10 @@ namespace BinaryDependencyPropagator
 
     public class FileSearch
     {
-        public IList<FileData> GetFiles(IList<FileSearchCriteria> fileMappingSearchCriteria)
+        public IList<FileData> GetFiles(IList<FileSearchCriteria> dllSearchCriteria)
         {
             var fileSystem = new FileSystem();
-            var fileNames = fileMappingSearchCriteria.AsParallel()
+            var fileNames = dllSearchCriteria.AsParallel()
                 .SelectMany(fileMappingSearchCriterion => fileSystem.GetFiles(fileMappingSearchCriterion.Root)
                 .Where(x => fileMappingSearchCriterion.IsAcceptable?.Invoke(x) ?? true));
             return fileNames.Select(x => new FileData { Date = File.GetLastWriteTimeUtc(x), FullName = x }).Distinct().ToList();
