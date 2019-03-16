@@ -98,8 +98,8 @@ namespace BinaryDependencyPropagator
 
             var allFilesGroupedByName = files.ToLookup(x => Path.GetFileName(x.FullName));
 
-            var subsetNotFromNuget = files.Where(x => !x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
-            var subsetWithPdb = subsetNotFromNuget.AsParallel().Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(ToPdb(x.FullName))).ToList();
+            var subsetNotFromNuget = files.AsParallel().Where(x => !x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
+            var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(ToPdb(x.FullName))).ToList();
             var srcCollection = subsetWithPdb.GroupBy(x => Path.GetFileName(x.FullName)).Select(x => new {itself = x, newest = x.Max(y => y.Date)}).Select(x => x.itself.First(y => y.Date == x.newest)).ToList();
             int processedFiles = 0;
             Parallel.ForEach(srcCollection, srcFile =>
@@ -162,8 +162,8 @@ namespace BinaryDependencyPropagator
         {
             var fileSystem = new FileSystem();
             var fileNames = dllSearchCriteria.AsParallel()
-                .SelectMany(fileMappingSearchCriterion => fileSystem.GetFiles(fileMappingSearchCriterion.Root)
-                .Where(x => fileMappingSearchCriterion.IsAcceptable?.Invoke(x) ?? true));
+                .SelectMany(search => fileSystem.GetFiles(search.Root)
+                .Where(x => search.IsAcceptable?.Invoke(x) ?? true));
             return fileNames.Select(x => new FileData { Date = File.GetLastWriteTimeUtc(x), FullName = x }).Distinct().ToList();
         }
     }
