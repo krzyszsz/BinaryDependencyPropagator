@@ -96,6 +96,7 @@ namespace BinaryDependencyPropagator.Tests
 
         private void AssertMethod()
         {
+            Thread.Sleep(TimeSpan.FromSeconds(1));  // Filesystems are not perfect, especially net fs, and you will not always get what you want (but what you need?).
             Assert.That(Directory.GetFiles(_testDirectory, "*.*", SearchOption.AllDirectories).OrderBy(x => x),
                 Is.EquivalentTo(new []
                 {
