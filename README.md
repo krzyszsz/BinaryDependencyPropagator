@@ -1,4 +1,5 @@
-# BinaryDependencyPropagator
+# Binary Dependency Propagator
+(for .net developers)
 
 [![Build Status](https://dev.azure.com/krzysztofjaniszewski0334/BinaryDependencyPropagator/_apis/build/status/krzyszsz.BinaryDependencyPropagator?branchName=master)](https://dev.azure.com/krzysztofjaniszewski0334/BinaryDependencyPropagator/_build/latest?definitionId=1&branchName=master)
 
@@ -13,8 +14,10 @@ but including your own debugging symbols. This tool automates this process with 
 modification date should override the older dll-s with the same name.
 
 ## Usage:
-Modify the directory names in SearchCriteria property to match your project directories.
-Run it every time after you build one of the projects of your application that you would like to propagate
+* Open the file BinaryDependencyPropagator\Program.cs.
+* Modify the directory names in SearchCriteria property to match your project directories.
+* Build it.
+* Run it every time after you build one of the projects of your application that you would like to propagate
 to the other parts of your project.
 
 ## WARNING:
