@@ -19,7 +19,7 @@ namespace BinaryDependencyPropagator
     /// modification date should override the older dll-s with the same name.
     /// 
     /// Usage:
-    /// Modify the directory names in the main method to match your project directories.
+    /// Modify the directory names in SearchCriteria property to match your project directories.
     /// Run it every time after you build one of the projects of your application that you would like to propagate
     /// to the other parts of your project.
     /// 
@@ -33,24 +33,27 @@ namespace BinaryDependencyPropagator
     /// Think of it as a template for building your own solution of your own problem.
     /// It is meant to be simple to modify so it looks more like a single-file script rather than a normal application.
     /// </summary>
-    class Program
+    public class Program
     {
         public const string FileExtension = ".dll";
         public const string FileExtensionSearchPattern = "*.dll";
         public const string DebugSymbolsExtension = ".pdb";
-        public const string NugetDirectory = "/packages/";  // App excludes packages from source directories (as the point is to override packages and not the rest of dll-s)
+        public const string NugetDirectory = "/packages/";
+        public static Func<string, bool> CanBeSourceOfPropagation = x => !x.ToLower().Replace("\\", "/").Contains(NugetDirectory);
+        public static Func<string, bool> CanBeDestinationOfPropagation = x => true; // Every dll can be overriden.
 
-        static void Main()
+        public static FileSearchCriteria[] SearchCriteria =
+        {
+            new FileSearchCriteria {Root = @"c:\abc\cde"}, // Please specify all your source directories here.
+            new FileSearchCriteria {Root = @"c:\abc\xyz"},
+            new FileSearchCriteria {Root = @"c:\abc\aabbb"}
+        };
+
+        public static void Main()
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            var filesToLookInto = new FileSearch().GetFiles(new List<FileSearchCriteria>
-            {
-                new FileSearchCriteria { Root = @"c:\abc\cde" },    // Please specify all your source directories here.
-                new FileSearchCriteria { Root = @"c:\abc\xyz" },
-                new FileSearchCriteria { Root = @"c:\abc\aabbb" },
-            });
-
+            var filesToLookInto = new FileSearch().GetFiles(SearchCriteria);
             new FileSystem().CopyNewerFilesWithPdb(filesToLookInto);
             Console.WriteLine("Time: {0}s", sw.Elapsed.TotalSeconds);
         }
@@ -70,8 +73,8 @@ namespace BinaryDependencyPropagator
                 {
                     if (retriesLeft == 1)
                     {
-                        Console.WriteLine("Sleep before final attempt.");
-                        Thread.Sleep(TimeSpan.FromSeconds(0.1));
+                        Console.WriteLine("Sleep before final attempt of action: {0}.", loggingMessage);
+                        Thread.Sleep(TimeSpan.FromSeconds(1));
                     }
 
                     Retry(action, retriesLeft - 1, loggingMessage);
@@ -79,14 +82,22 @@ namespace BinaryDependencyPropagator
 
                 if (retriesLeft == 0)
                 {
-                    Console.WriteLine("Err '{0}' while attempting: {1}", e.Message, loggingMessage);
+                    Console.WriteLine("Error '{0}' while attempting: {1}", e.Message, loggingMessage);
                 }
             }
         }
 
+        private T Retry<T>(Func<T> func, int retriesLeft = 3, string loggingMessage = null)
+        {
+            T result = default(T);
+            Retry(() => { result = func(); }, retriesLeft, loggingMessage);
+            return result;
+        }
+
         public IEnumerable<string> GetFiles(string root)
         {
-            return Directory.GetFiles(root, Program.FileExtensionSearchPattern, SearchOption.AllDirectories);
+            return Retry(() => Directory.GetFiles(root, Program.FileExtensionSearchPattern, SearchOption.AllDirectories),
+                loggingMessage: string.Format("GetFiles({0})", root));
         }
 
         public void CopyNewerFilesWithPdb(ICollection<FileData> files)
@@ -98,14 +109,20 @@ namespace BinaryDependencyPropagator
 
             var allFilesGroupedByName = files.ToLookup(x => Path.GetFileName(x.FullName));
 
-            var subsetNotFromNuget = files.AsParallel().Where(x => !x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
-            var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(ToPdb(x.FullName))).ToList();
-            var srcCollection = subsetWithPdb.GroupBy(x => Path.GetFileName(x.FullName)).Select(x => new {itself = x, newest = x.Max(y => y.Date)}).Select(x => x.itself.First(y => y.Date == x.newest)).ToList();
+            var subsetNotFromNuget = files.AsParallel().Where(x => Program.CanBeSourceOfPropagation(x.FullName));
+            var subsetWithPdb = subsetNotFromNuget
+                .Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(ToPdb(x.FullName))).ToList();
+            var srcCollection = subsetWithPdb.GroupBy(x => Path.GetFileName(x.FullName))
+                .Select(x => new {itself = x, newest = x.Max(y => y.Date)}).Select(x => x.itself.First(y => y.Date == x.newest)).ToList();
             int processedFiles = 0;
             Parallel.ForEach(srcCollection, srcFile =>
             {
                 var destinationFiles = allFilesGroupedByName[Path.GetFileName(srcFile.FullName)]
-                    .Where(x => x.FullName != srcFile.FullName && srcFile.Date > x.Date).Distinct();
+                    .Where(
+                        x => x.FullName != srcFile.FullName &&
+                        srcFile.Date > x.Date &&
+                        Program.CanBeDestinationOfPropagation(x.FullName))
+                    .Distinct();
 
                 foreach (var destFile in destinationFiles)
                 {
@@ -158,7 +175,7 @@ namespace BinaryDependencyPropagator
 
     public class FileSearch
     {
-        public IList<FileData> GetFiles(IList<FileSearchCriteria> dllSearchCriteria)
+        public IList<FileData> GetFiles(IEnumerable<FileSearchCriteria> dllSearchCriteria)
         {
             var fileSystem = new FileSystem();
             var fileNames = dllSearchCriteria.AsParallel()

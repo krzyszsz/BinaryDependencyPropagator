@@ -11,7 +11,7 @@ but including your own debugging symbols. This tool automates this process with 
 modification date should override the older dll-s with the same name.
 
 Usage:
-Modify the directory names in the main method to match your project directories.
+Modify the directory names in SearchCriteria property to match your project directories.
 Run it every time after you build one of the projects of your application that you would like to propagate
 to the other parts of your project.
 
