@@ -19,7 +19,7 @@ namespace BinaryDependencyPropagator
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            var filesToLookInto = new FileSearch().GetFiles(new List<FileSearchCriteria>()
+            var filesToLookInto = new FileSearch().GetFiles(new List<FileSearchCriteria>
             {
                 new FileSearchCriteria { Root = @"c:\abc\cde" },
                 new FileSearchCriteria { Root = @"c:\abc\xyz" }
@@ -73,7 +73,7 @@ namespace BinaryDependencyPropagator
             var allFilesGroupedByName = files.ToLookup(x => Path.GetFileName(x.FullName));
 
             var subsetNotFromNuget = files.Where(x => !x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
-            var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(x.FullName.Substring(0, x.FullName.Length - 4) + Program.DebugSymbolsExtension)).ToList();
+            var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(ToPdb(x.FullName))).ToList();
             var srcCollection = subsetWithPdb.GroupBy(x => Path.GetFileName(x.FullName)).Select(x => new {itself = x, newest = x.Max(y => y.Date)}).Select(x => x.itself.First(y => y.Date == x.newest)).ToList();
             int processedFiles = 0;
             Parallel.ForEach(srcCollection, srcFile =>
@@ -93,8 +93,8 @@ namespace BinaryDependencyPropagator
 
                     var pdbSrc = ToPdb(srcFile.FullName);
                     var pdbDestination = ToPdb(destFile.FullName);
-                    Retry(() => File.Copy(pdbSrc, pdbDestination), loggingMessage: string.Format("copy:{0}=>{1}", pdbSrc, pdbDestination));
                     Retry(() => File.Delete(pdbDestination), loggingMessage: string.Format("delete:{0}", pdbDestination));
+                    Retry(() => File.Copy(pdbSrc, pdbDestination), loggingMessage: string.Format("copy:{0}=>{1}", pdbSrc, pdbDestination));
 
                     Interlocked.Increment(ref processedFiles);
                 }
