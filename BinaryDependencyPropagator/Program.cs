@@ -15,11 +15,11 @@ namespace BinaryDependencyPropagator
         public const string DebugSymbolsExtension = ".pdb";
         public const string NugetDirectory = "/packages/";
 
-        static void Main(string[] args)
+        static void Main()
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            var filesToLookInto = new FilesMappingGenerator().GetFileMap(new List<FileSearchCriteria>()
+            var filesToLookInto = new FileSearch().GetFiles(new List<FileSearchCriteria>()
             {
                 new FileSearchCriteria { Root = @"c:\abc\cde" },
                 new FileSearchCriteria { Root = @"c:\abc\xyz" }
@@ -73,7 +73,7 @@ namespace BinaryDependencyPropagator
             var allFilesGroupedByName = files.ToLookup(x => Path.GetFileName(x.FullName));
 
             var subsetNotFromNuget = files.Where(x => !x.FullName.ToLower().Replace("\\", "/").Contains(Program.NugetDirectory));
-            var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(x.FullName.Substring(x.FullName.Length - 4) + Program.DebugSymbolsExtension)).ToList();
+            var subsetWithPdb = subsetNotFromNuget.Where(x => x.FullName.ToLower().EndsWith(Program.FileExtension) && File.Exists(x.FullName.Substring(0, x.FullName.Length - 4) + Program.DebugSymbolsExtension)).ToList();
             var srcCollection = subsetWithPdb.GroupBy(x => Path.GetFileName(x.FullName)).Select(x => new {itself = x, newest = x.Max(y => y.Date)}).Select(x => x.itself.First(y => y.Date == x.newest)).ToList();
             int processedFiles = 0;
             Parallel.ForEach(srcCollection, srcFile =>
@@ -122,15 +122,15 @@ namespace BinaryDependencyPropagator
         public DateTime Date { get; set; }
     }
 
-    public class FilesMappingGenerator
+    public class FileSearch
     {
-        public IList<FileData> GetFileMap(IList<FileSearchCriteria> fileMappingSearchCriteria)
+        public IList<FileData> GetFiles(IList<FileSearchCriteria> fileMappingSearchCriteria)
         {
             var fileSystem = new FileSystem();
             var fileNames = fileMappingSearchCriteria.AsParallel()
                 .SelectMany(fileMappingSearchCriterion => fileSystem.GetFiles(fileMappingSearchCriterion.Root)
                 .Where(x => fileMappingSearchCriterion.IsAcceptable?.Invoke(x) ?? true));
-            return fileNames.Select(x => new FileData { Date = File.GetLastWriteTimeUtc(x), FullName = x }).ToList();
+            return fileNames.Select(x => new FileData { Date = File.GetLastWriteTimeUtc(x), FullName = x }).Distinct().ToList();
         }
     }
 }
