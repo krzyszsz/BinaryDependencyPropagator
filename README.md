@@ -20,7 +20,8 @@ Think twice if this tool is the right choice in your case. It overrides *.dll fi
 they will be overridden by the newer versions of these dll-s
 
 WARNING-2:
-This tool has not been extensively tested. It is a prototype and not a production-ready solution.
+This tool has not been extensively tested; I only tried it with my projects and I can prove it works with the integration test.
+Having said that, it might not work with your project.
 
 Think of it as a template for building your own solution of your own problem.
 It is meant to be simple to modify so it looks more like a single-file script rather than a normal application.
