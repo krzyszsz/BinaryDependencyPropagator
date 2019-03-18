@@ -60,6 +60,15 @@ namespace BinaryDependencyPropagator
 
         public static void Main()
         {
+            var missingDirectories = SearchCriteria?.Where(x => !Directory.Exists(x.Root)).Select(x => x.Root);
+            if (missingDirectories == null || missingDirectories.Any())
+            {
+                Console.WriteLine("Please set up SearchCriteria correctly. These directories were not found: {0}",
+                    string.Join(", ", missingDirectories ?? new List<string>()));
+                Debugger.Break();
+                return;
+            }
+
             Stopwatch sw = new Stopwatch();
             sw.Start();
             var filesToLookInto = new FileSearch().GetFiles(SearchCriteria);
